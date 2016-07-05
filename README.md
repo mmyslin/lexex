@@ -9,6 +9,7 @@
 
 	+ I've distilled that process to the list of commands below, which are needed to set up an experiment called lexex_morpheme_manip_rep:
 
+
           ln -s ~/lexex_morpheme_manip_rep/www ~/public_html/lexex_morpheme_manip_rep
           touch ~/lexex_morpheme_manip_rep/server.log
           mkdir ~/lexex_morpheme_manip_rep/cache 
