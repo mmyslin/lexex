@@ -1,8 +1,6 @@
 1. Generate stimuli for Ibex
-2.
-	-- Run generateIbexStims.r
-
-	-- Parameters:
+* Run generateIbexStims.r
+  + Parameters:
 	
 		-- Line 9 restricts the stimuli to shared-morpheme items only (Items 1-32; Experiment 1). Comment it out to include non-shared-morpheme items too (Items 1-64; Experiment 2).
 		
