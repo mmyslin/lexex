@@ -1,0 +1,6 @@
+  
+   ];
+
+var randomnumber=String(Math.floor(Math.random()*10001));
+var rn = String("Your completion code is XDBR" + randomnumber);
+var completionMessage = rn;
