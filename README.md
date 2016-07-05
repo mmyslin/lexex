@@ -20,7 +20,7 @@
           chmod -R a+w ~/lexex_morpheme_manip_rep/results
           nano ~/lexex_morpheme_manip_rep/www/server.py
           nano ~/lexex_morpheme_manip_rep/server_conf.py
-          
+        
 3. Copy the generated Ibex stimuli to the Ibex experiment:
 
           scp /Users/markmyslin/Documents/UCSD/projects/lexex/lexex/expt/example_data.js mmyslin@expedition.ucsd.edu:~/lexex_morpheme_manip_rep/data_includes/example_data.js
