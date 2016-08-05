@@ -1,4 +1,4 @@
-var shuffleSequence = seq("setcounter", "intro", "sep", sepWith("sep", shuffle(rshuffle("fillers", "control.error", "control.target","distractor.error", "distractor.target"))));
+var shuffleSequence = seq("setcounter", "intro", "sep", sepWith("sep", shuffle(rshuffle("fillers", "control.error", "control.target","distractor.error", "distractor.target"))), "hiddenCompletionCode");
 
 var defaults = [
     "Separator", {
@@ -41,6 +41,9 @@ var defaults = [
         saveReactionTime: true
     }
 ];
+
+var randomnumber=Math.floor(Math.random()*10000000001);
+var completioncode=String("LE" + randomnumber);
 
 var items = [
 

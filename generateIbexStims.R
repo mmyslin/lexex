@@ -6,7 +6,7 @@ stimMaster = data.frame(gsheet2tbl('https://docs.google.com/spreadsheets/d/1TVXZ
 
 stimMaster$ItemNo = c(1:dim(stimMaster)[1])
 
-stimMaster = subset(stimMaster, Morpheme!="notshared")
+#stimMaster = subset(stimMaster, Morpheme!="notshared")
 
 opener = "], \"Question\", {q: \"<font size=4>&quot;"
 closer = "&quot;</font><br><br><i>Do you think this person ended up saying exactly what she meant?</i><br><br>\", as: [\"Yes\", \"No\"]}],"
@@ -46,7 +46,7 @@ allstims = c(allstims, "[[\"fillers\", 102], \"Question\", {q: \"<font size=4>&q
 
 allstims = c(allstims, "[[\"fillers\", 103], \"Question\", {q: \"<font size=4>&quot;The university library is a mine gold of information.&quot;</font><br><br><i>Do you think this person ended up saying exactly what she meant?</i><br><br>\", as: [\"Yes\", \"No\"]}],")
 
-cat(allstims, sep="\n", file="~/Documents/UCSD/projects/lexex/lexex/expt/items.txt")
+cat(allstims, sep="\n", file="./expt/items.txt")
 
-system("cat ~/Documents/UCSD/projects/lexex/lexex/expt/chunk1.txt ~/Documents/UCSD/projects/lexex/lexex/expt/items.txt ~/Documents/UCSD/projects/lexex/lexex/expt/chunk2.txt > ~/Documents/UCSD/projects/lexex/lexex/expt/example_data.js", intern=F)
+system("cat ./expt/chunk1.txt ./expt/items.txt ./expt/chunk2.txt > ./expt/example_data.js", intern=F)
 
