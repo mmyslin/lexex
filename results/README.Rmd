@@ -1,0 +1,120 @@
+# Basic information about data
+
+Results from first 19 subjects are in results.first19 -- these were done before Roger had implemented recording of the results code.  Fortunately, at least 18 of these participants are self-reported native English speakers.
+
+Lucky Eagle 5-16 were run starting just after 11am Eastern on Friday, August 5, 2016.  For this batch, use the following commands to generate results to be analyzed:
+
+    egrep hiddenCompletionCode results > completionCodes
+    egrep -v hiddenCompletionCode results > results-by-trial
+    
+# Results
+
+```{r load-and-set-up-data, echo=FALSE}
+library(lme4)
+library(ggplot2)
+library(data.table)
+library(dplyr)
+
+se <- function (x) 
+sd(x)/sqrt(length(subset(x, !is.na(x))))
+
+#mturk.data <- read.csv("Batch_2486017_batch_results.csv")
+
+mturk.data.filenames <- paste("Batch_24878",c(21:22,24:26,28:29,31:35),"_batch_results.csv",sep="")
+mturk.data.list <- lapply(mturk.data.filenames,function(x) read.csv(x))
+mturk.data <- rbindlist(mturk.data.list)
+
+codeToNativeLanguage <- as.character(mturk.data$Answer.nativeLanguage)
+names(codeToNativeLanguage) <- as.character(mturk.data$Answer.feedback)
+
+completionCodes <- read.table("completionCodes",sep=",",col.names=c("Timestamp","ParticipantID","Controller","IbexItem","Element","Type","Item","CompletionCode"))
+participantToCode <- as.character(completionCodes$CompletionCode)
+names(participantToCode) <- as.character(completionCodes$ParticipantID)
+
+
+dat <- read.table("results-by-trial",sep=",",quote="",comment.char="#",col.names=c("Timestamp","ParticipantID","Controller","IbexItem","Element","Type","Item","Question","Answer","Correct","RT"))
+dat$PotentialError <- with(dat,ifelse(grepl(".*target.*",as.character(Type)),"Not a potential error",ifelse(grepl(".*error.*",as.character(Type)),"Potential error",NA)))
+dat$Context <- with(dat,ifelse(grepl(".*distractor.*",as.character(Type)),"Distractor",ifelse(grepl(".*control.*",as.character(Type)),"Non-distractor",NA)))
+dat$SharedMorpheme <- with(dat,ifelse(Item<33,"Shared Morpheme",ifelse(Item<65,"No Shared Morpheme",NA)))
+dat$Filler <- with(dat,Item %in% c(100,101,102,102))
+dat$Response <- with(dat,Answer=="Yes")
+
+#with(dat,xtabs(~factor(paste(Context,PotentialError))+Type))
+
+
+# get native language info
+dat$NativeLanguage <- codeToNativeLanguage[participantToCode[as.character(dat$ParticipantID)]]
+
+## remove data from participants who aren't self-reported native English speakers
+dat <- subset(dat,NativeLanguage %in% c("en", "english", "English", "ENGLISH"))
+
+
+
+
+subj.means <- with(subset(dat,!Filler),aggregate(list(Response=Response),list(Subject=ParticipantID,Context=Context,PotentialError=PotentialError,SharedMorpheme=SharedMorpheme),mean))
+item.means <- with(subset(dat,!Filler),aggregate(list(Response=Response),list(Item=factor(paste("I",Item)),Context=Context,PotentialError=PotentialError,SharedMorpheme=SharedMorpheme),mean))
+
+
+#with(subj.means,tapply(Response,list(Context,PotentialError,SharedMorpheme),mean))
+#with(subj.means,tapply(Response,list(Context,PotentialError,SharedMorpheme),se))
+
+f <- function(SharedMorphemeValue="Shared Morpheme") {
+	bgPalette <- c(rgb(69,181,195,maxColorValue=255),rgb(200,220,99,maxColorValue=255))
+	SummaryStats <- summarise(group_by(subset(subj.means,SharedMorpheme==SharedMorphemeValue),PotentialError,Context),Mean=mean(Response),SE=se(Response))
+	print(p <- ggplot(SummaryStats, aes(x=PotentialError, y=Mean, fill=Context)) + 
+        geom_bar(position=position_dodge(), stat="identity") +
+        geom_errorbar(aes(ymin=Mean-SE, ymax=Mean+SE),
+                      width=.2,                    # Width of the error bars
+                      position=position_dodge(.9)) + scale_y_continuous(limits=c(0,1)) + ylab("% YES") + ggtitle(SharedMorphemeValue) + scale_fill_manual(values=bgPalette))
+}
+```
+
+Some basic information -- we have good coverage of each item-condition combination:
+
+```{r item-condition-combinations}
+# check response rates
+with(dat,tapply(Item,list(Item,Type),length))
+```
+
+...and response rates for the four fillers (all of which have obvious errors) are reasonable:
+
+```{r filler-behavior}
+# check filler behavior
+with(subset(dat,Type %in% c("fillers","intro")),tapply(Response,Item,mean))
+```
+
+Here is a plot of by-subjects means and standard error bars for the SHARED MORPHEME condition:
+
+```{r shared-morpheme-results, fig.width=4, fig.height=4}
+f("Shared Morpheme")
+```
+
+and here is a similar plot for the NO SHARED MORPHEME condition:
+
+```{r no-shared-morpheme-results, fig.width=4, fig.height=4}
+f("No Shared Morpheme")
+```
+
+## ANOVA analysis
+
+```{r ANOVA-analysis}
+summary(aov(Response~PotentialError*Context + Error(Subject/(PotentialError*Context)),subset(subj.means,SharedMorpheme=="Shared Morpheme")))
+summary(aov(Response~PotentialError*Context + Error(Item/(PotentialError*Context)),subset(item.means,SharedMorpheme=="Shared Morpheme")))
+
+summary(aov(Response~PotentialError*Context + Error(Subject/(PotentialError*Context)),subset(subj.means,SharedMorpheme=="No Shared Morpheme")))
+summary(aov(Response~PotentialError*Context + Error(Item/(PotentialError*Context)),subset(item.means,SharedMorpheme=="No Shared Morpheme")))
+```
+
+## Mixed model analysis
+
+```{r lme4-analysis,cache=T}
+dat$poterr <- ifelse(dat$PotentialError=="Potential error",1,ifelse(dat$PotentialError=="Not a potential error",-1,NA))
+dat$ctxt <- ifelse(dat$Context=="Distractor",1,ifelse(dat$Context=="Non-distractor",-1,NA))
+system.time(m <- glmer(Response ~ poterr*ctxt + (poterr*ctxt || ParticipantID) + (poterr*ctxt || Item),subset(dat,SharedMorpheme=="Shared Morpheme"),family="binomial"))
+system.time(m0 <- glmer(Response ~ poterr+ctxt + (poterr*ctxt || ParticipantID) + (poterr*ctxt || Item),subset(dat,SharedMorpheme=="No Shared Morpheme"),family="binomial"))
+```
+
+```{r report-lme4-analysis}
+summary(m)
+anova(m0,m)
+```
