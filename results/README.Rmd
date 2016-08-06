@@ -97,24 +97,53 @@ f("No Shared Morpheme")
 
 ## ANOVA analysis
 
-```{r ANOVA-analysis}
+
+### Shared morpheme data
+
+No trace of an interaction for the shared-morpheme data:
+
+```{r ANOVA-analysis-shared-morpheme}
 summary(aov(Response~PotentialError*Context + Error(Subject/(PotentialError*Context)),subset(subj.means,SharedMorpheme=="Shared Morpheme")))
 summary(aov(Response~PotentialError*Context + Error(Item/(PotentialError*Context)),subset(item.means,SharedMorpheme=="Shared Morpheme")))
+```
 
+
+### No shared morpheme data
+
+And little trace of an interaction for the no-shared-morpheme data:
+
+```{r ANOVA-analysis-no-shared-morpheme}
 summary(aov(Response~PotentialError*Context + Error(Subject/(PotentialError*Context)),subset(subj.means,SharedMorpheme=="No Shared Morpheme")))
 summary(aov(Response~PotentialError*Context + Error(Item/(PotentialError*Context)),subset(item.means,SharedMorpheme=="No Shared Morpheme")))
 ```
 
 ## Mixed model analysis
 
-```{r lme4-analysis,cache=T}
+### Shared morpheme data
+
+```{r lme4-analysis-shared-morpheme,cache=T}
 dat$poterr <- ifelse(dat$PotentialError=="Potential error",1,ifelse(dat$PotentialError=="Not a potential error",-1,NA))
 dat$ctxt <- ifelse(dat$Context=="Distractor",1,ifelse(dat$Context=="Non-distractor",-1,NA))
 system.time(m <- glmer(Response ~ poterr*ctxt + (poterr*ctxt || ParticipantID) + (poterr*ctxt || Item),subset(dat,SharedMorpheme=="Shared Morpheme"),family="binomial"))
+system.time(m0 <- glmer(Response ~ poterr+ctxt + (poterr*ctxt || ParticipantID) + (poterr*ctxt || Item),subset(dat,SharedMorpheme=="Shared Morpheme"),family="binomial"))
+```
+
+```{r report-lme4-analysis-shared-morpheme}
+summary(m)
+anova(m0,m)
+```
+
+
+### No shared morpheme data
+
+```{r lme4-analysis-no-shared-morpheme,cache=T}
+dat$poterr <- ifelse(dat$PotentialError=="Potential error",1,ifelse(dat$PotentialError=="Not a potential error",-1,NA))
+dat$ctxt <- ifelse(dat$Context=="Distractor",1,ifelse(dat$Context=="Non-distractor",-1,NA))
+system.time(m <- glmer(Response ~ poterr*ctxt + (poterr*ctxt || ParticipantID) + (poterr*ctxt || Item),subset(dat,SharedMorpheme=="No Shared Morpheme"),family="binomial"))
 system.time(m0 <- glmer(Response ~ poterr+ctxt + (poterr*ctxt || ParticipantID) + (poterr*ctxt || Item),subset(dat,SharedMorpheme=="No Shared Morpheme"),family="binomial"))
 ```
 
-```{r report-lme4-analysis}
+```{r report-lme4-analysis-no-shared-morpheme}
 summary(m)
 anova(m0,m)
 ```
