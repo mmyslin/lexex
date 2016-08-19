@@ -1,6 +1,6 @@
 # Basic information about data
 
-Results from first 19 subjects are in results.first19 -- these were done before Roger had implemented recording of the results code.  Fortunately, at least 18 of these participants are self-reported native English speakers.
+Results from first 19 subjects are in results.first19 -- these were done before Roger had implemented recording of the results codes auto-generated in Ibex which allowed cross-tabulation of self-reported language & demographic information with experimental data.  At least 18 of these participants are self-reported native English speakers, but these are results are nevertheless not included in this analysis.
 
 Lucky Eagle 5-16 were run starting just after 11am Eastern on Friday, August 5, 2016.  For this batch, use the following commands to generate results to be analyzed:
 
@@ -69,20 +69,6 @@ f <- function(SharedMorphemeValue="Shared Morpheme") {
 }
 ```
 
-Some basic information -- we have good coverage of each item-condition combination:
-
-```{r item-condition-combinations}
-# check response rates
-with(dat,tapply(Item,list(Item,Type),length))
-```
-
-...and response rates for the four fillers (all of which have obvious errors) are reasonable:
-
-```{r filler-behavior}
-# check filler behavior
-with(subset(dat,Type %in% c("fillers","intro")),tapply(Response,Item,mean))
-```
-
 Here is a plot of by-subjects means and standard error bars for the SHARED MORPHEME condition:
 
 ```{r shared-morpheme-results, fig.width=4, fig.height=4}
@@ -117,6 +103,16 @@ summary(aov(Response~PotentialError*Context + Error(Subject/(PotentialError*Cont
 summary(aov(Response~PotentialError*Context + Error(Item/(PotentialError*Context)),subset(item.means,SharedMorpheme=="No Shared Morpheme")))
 ```
 
+### Three-way interaction?
+
+The three-way interaction is not close to significant by either subjects or items:
+
+```{r ANOVA-three-way-interaction}
+summary(aov(Response~PotentialError*Context*SharedMorpheme + Error(Subject/(PotentialError*Context*SharedMorpheme)),subj.means))
+summary(aov(Response~PotentialError*Context*SharedMorpheme + Error(Item/(PotentialError*Context)),item.means))
+```
+
+
 ## Mixed model analysis
 
 ### Shared morpheme data
@@ -146,4 +142,56 @@ system.time(m0 <- glmer(Response ~ poterr+ctxt + (poterr*ctxt || ParticipantID) 
 ```{r report-lme4-analysis-no-shared-morpheme}
 summary(m)
 anova(m0,m)
+```
+
+### Three-way interaction
+
+High-level point in this section: none of these models converged, but if one considers the graphs and ANOVA results it's fairly clear that there's no evidence for an interaction.
+
+Models with a random intercept and all random slopes fail to converge even with no random correlation parameters, but there is no clear sign of an interaction:
+
+```{r lme4-analysis-three-way-interaction,cache=T}
+dat$poterr <- ifelse(dat$PotentialError=="Potential error",1,ifelse(dat$PotentialError=="Not a potential error",-1,NA))
+dat$ctxt <- ifelse(dat$Context=="Distractor",1,ifelse(dat$Context=="Non-distractor",-1,NA))
+dat$shmorph <- ifelse(dat$SharedMorpheme=="Shared Morpheme",1,ifelse(dat$SharedMorpheme=="No Shared Morpheme",-1,NA))
+system.time(m <- glmer(Response ~ poterr*ctxt*shmorph + (poterr*ctxt*shmorph || ParticipantID) + (poterr*ctxt || Item),subset(dat,! Filler),family="binomial"))
+system.time(m0 <- glmer(Response ~ poterr*ctxt*shmorph - poterr:ctxt:shmorph + (poterr*ctxt*shmorph || ParticipantID) + (poterr*ctxt || Item),subset(dat,! Filler),family="binomial"))
+```
+
+```{r report-lme4-analysis-three-way-interaction}
+summary(m)
+anova(m0,m)
+```
+
+
+Even models with only the random intercept and the critical random slopes fail to converge.  At any rate there is still no clear sign of an interaction:
+
+```{r lme4-analysis-three-way-interaction-simplified-ranefs,cache=T}
+dat$poterr <- ifelse(dat$PotentialError=="Potential error",1,ifelse(dat$PotentialError=="Not a potential error",-1,NA))
+dat$ctxt <- ifelse(dat$Context=="Distractor",1,ifelse(dat$Context=="Non-distractor",-1,NA))
+dat$shmorph <- ifelse(dat$SharedMorpheme=="Shared Morpheme",1,ifelse(dat$SharedMorpheme=="No Shared Morpheme",-1,NA))
+system.time(m.simpleranef <- glmer(Response ~ poterr*ctxt*shmorph + (poterr:ctxt:shmorph || ParticipantID) + (poterr:ctxt || Item),subset(dat,! Filler),family="binomial"))
+system.time(m0.simpleranef <- glmer(Response ~ poterr*ctxt*shmorph - poterr:ctxt:shmorph + (poterr:ctxt:shmorph || ParticipantID) + (poterr:ctxt || Item),subset(dat,! Filler),family="binomial"))
+```
+
+```{r report-lme4-analysis-three-way-interaction-simplified-ranefs}
+summary(m.simpleranef)
+anova(m0.simpleranef,m.simpleranef)
+```
+
+
+## Miscellaneous sanity checks
+
+Some basic information -- we have good coverage of each item-condition combination:
+
+```{r item-condition-combinations}
+# check response rates
+with(dat,tapply(Item,list(Item,Type),length))
+```
+
+...and response rates for the four fillers (all of which have obvious errors) are reasonably low:
+
+```{r filler-behavior}
+# check filler behavior
+with(subset(dat,Type %in% c("fillers","intro")),tapply(Response,Item,mean))
 ```
